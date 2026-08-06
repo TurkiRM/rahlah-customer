@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: rahlah-customer
+    env: static
+    staticPublishPath: .
+    buildCommand: "echo 'no build step'"

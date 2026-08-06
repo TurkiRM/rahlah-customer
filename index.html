@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Rahlah — Customer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F2ECDC; --ink:#1C2620; --ink-soft:#5B6259; --panel:#FFFDF6;
+    --brand:#0F4C3A; --brand-deep:#0A362A; --gold:#C9992F;
+    --men:#2E3B58; --women:#A6486A; --line:#DFD5B8; --radius:18px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;display:flex;justify-content:center;min-height:100vh;-webkit-font-smoothing:antialiased;}
+  .phone{width:100%;max-width:420px;min-height:100vh;background:var(--panel);position:relative;display:flex;flex-direction:column;box-shadow:0 0 60px rgba(15,76,58,0.08);}
+  header.top{padding:22px 22px 16px;background:var(--brand);color:#fff;border-radius:0 0 26px 26px;position:relative;}
+  .brand-row{display:flex;align-items:center;justify-content:space-between;}
+  .brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;letter-spacing:0.2px;}
+  .brand small{display:block;font-family:'Inter';font-weight:500;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;opacity:0.65;margin-top:2px;}
+  .avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;cursor:pointer;}
+  .conn-dot{width:8px;height:8px;border-radius:50%;background:#E5B25A;position:absolute;top:14px;right:14px;}
+  .conn-dot.live{background:#7FD69A;}
+  .route-pill{margin-top:18px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:10px;}
+  .route-pill .pt{flex:1;}
+  .route-pill .pt .label{font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;}
+  .route-pill .pt .name{font-family:'Space Grotesk';font-weight:600;font-size:14px;margin-top:2px;}
+  .swap-btn{background:var(--gold);border:none;width:32px;height:32px;border-radius:50%;color:var(--brand-deep);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  main{flex:1;padding:20px 20px 100px;overflow-y:auto;}
+  .section-title{font-family:'Space Grotesk';font-weight:600;font-size:15px;margin:6px 0 12px;color:var(--brand-deep);}
+  .section-note{font-size:13px;color:var(--ink-soft);margin-top:-6px;margin-bottom:16px;}
+  .error-box{background:#FBE7E2;border:1px solid #E3A392;color:#8A3420;font-size:13px;border-radius:12px;padding:12px 14px;margin-bottom:14px;}
+  .field{margin-bottom:14px;}
+  .field label{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft);display:block;margin-bottom:6px;}
+  .field input{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;font-family:'Inter';font-size:14px;background:#fff;}
+  .switch-link{text-align:center;font-size:13px;color:var(--ink-soft);margin-top:14px;}
+  .switch-link a{color:var(--brand-deep);font-weight:600;cursor:pointer;text-decoration:underline;}
+  .profile-row{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+  .profile-name{font-family:'Space Grotesk';font-weight:600;font-size:14px;}
+  .profile-meta{font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+  .logout-link{font-size:12px;color:var(--ink-soft);background:none;border:none;cursor:pointer;text-decoration:underline;}
+
+  .vehicle-card{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:12px;cursor:pointer;transition:border-color .15s, transform .15s;}
+  .vehicle-card:active{transform:scale(0.98);}
+  .vc-top{display:flex;align-items:center;gap:14px;}
+  .v-icon{width:52px;height:52px;border-radius:14px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0;}
+  .v-info{flex:1;}
+  .v-name{font-family:'Space Grotesk';font-weight:600;font-size:15px;}
+  .v-seats{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .v-price{font-family:'IBM Plex Mono';font-weight:500;font-size:16px;color:var(--brand-deep);text-align:right;}
+  .v-price span{display:block;font-size:9px;color:var(--ink-soft);font-family:'Inter';text-transform:uppercase;letter-spacing:0.5px;}
+  .vc-full{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:flex;justify-content:space-between;align-items:center;}
+  .vc-full .vcf-label{font-size:12px;color:var(--ink-soft);}
+  .vc-full-btn{background:none;border:1.5px solid var(--gold);color:#8A6A1F;border-radius:10px;padding:7px 12px;font-family:'Space Grotesk';font-weight:600;font-size:12px;cursor:pointer;white-space:nowrap;}
+
+  .stepper-card{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .stepper-label{display:flex;align-items:center;gap:10px;}
+  .stepper-label .g-ic{font-size:20px;}
+  .stepper-label .g-name{font-family:'Space Grotesk';font-weight:600;font-size:14px;}
+  .stepper-controls{display:flex;align-items:center;gap:14px;}
+  .step-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);background:#fff;font-size:16px;font-family:'Space Grotesk';font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--brand-deep);}
+  .step-btn:disabled{opacity:0.3;cursor:not-allowed;}
+  .step-count{font-family:'IBM Plex Mono';font-weight:600;font-size:16px;min-width:18px;text-align:center;}
+  .party-summary{background:var(--bg);border-radius:14px;padding:14px 16px;margin:16px 0;display:flex;justify-content:space-between;align-items:center;}
+  .party-summary .ps-l{font-size:12px;color:var(--ink-soft);}
+  .party-summary .ps-v{font-family:'IBM Plex Mono';font-weight:600;font-size:16px;color:var(--brand-deep);}
+
+  .cta{width:100%;background:var(--brand);color:#fff;border:none;border-radius:14px;padding:16px;font-family:'Space Grotesk';font-weight:600;font-size:15px;cursor:pointer;margin-top:6px;}
+  .cta:disabled{background:#C9C4B2;cursor:not-allowed;}
+  .cta.ghost{background:transparent;color:var(--brand-deep);border:1.5px solid var(--line);}
+  .cta.gold{background:var(--gold);color:var(--brand-deep);}
+
+  .car-diagram{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:20px;margin-bottom:18px;}
+  .cd-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;}
+  .cd-title{font-family:'Space Grotesk';font-weight:600;font-size:14px;}
+  .cd-sub{font-size:11px;color:var(--ink-soft);font-family:'IBM Plex Mono';}
+  .driver-row{display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px dashed var(--line);flex-wrap:wrap;}
+  .driver-unit{display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .dnote{font-size:9px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:1px;}
+  .seat{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px dashed #D3CBAF;background:#FBF8EE;color:#B4AC8F;transition:all .25s;}
+  .seat.men{background:var(--men);border:2px solid var(--men);color:#fff;}
+  .seat.women{background:var(--women);border:2px solid var(--women);color:#fff;}
+  .seat.private{background:var(--gold);border:2px solid var(--gold);color:var(--brand-deep);}
+  .seat.you{box-shadow:0 0 0 3px var(--gold);}
+  .seat-row{display:flex;justify-content:center;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+  .row-tag{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--ink-soft);text-align:center;margin-bottom:6px;}
+  .progress-track{height:6px;background:var(--bg);border-radius:6px;overflow:hidden;margin-top:14px;}
+  .progress-fill{height:100%;background:var(--gold);border-radius:6px;transition:width .3s;}
+  .status-line{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-soft);margin-bottom:16px;}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);animation:pulse 1.4s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .private-badge{display:inline-block;background:var(--gold);color:var(--brand-deep);font-family:'Space Grotesk';font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;padding:4px 9px;border-radius:8px;margin-left:8px;}
+
+  .captain-card{background:var(--brand);color:#fff;border-radius:var(--radius);padding:20px;display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+  .cap-avatar{width:52px;height:52px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:18px;color:var(--brand-deep);flex-shrink:0;}
+  .cap-name{font-family:'Space Grotesk';font-weight:600;font-size:16px;}
+  .cap-meta{font-size:12px;opacity:0.75;margin-top:3px;}
+  .fare-box{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .fare-box .fl{font-size:12px;color:var(--ink-soft);}
+  .fare-box .fv{font-family:'IBM Plex Mono';font-weight:600;font-size:22px;color:var(--brand-deep);}
+
+  .screen{display:none;}
+  .screen.active{display:block;animation:fadein .25s;}
+  @keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  .nav-back{background:none;border:none;color:var(--ink-soft);font-size:13px;margin-bottom:14px;cursor:pointer;display:flex;align-items:center;gap:4px;padding:0;}
+  .suggest-chip{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+  .suggest-chip:active{transform:scale(0.98);}
+  .suggest-chip .sc-name{font-family:'Space Grotesk';font-weight:600;font-size:14px;}
+  .suggest-chip .sc-meta{font-size:11px;color:var(--ink-soft);margin-top:2px;}
+  .suggest-chip .sc-go{font-size:12px;font-family:'Space Grotesk';font-weight:600;color:var(--brand-deep);background:var(--bg);border-radius:9px;padding:6px 10px;white-space:nowrap;}
+  .history-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);font-size:13px;}
+  .history-row:last-child{border-bottom:none;}
+  .hr-meta{color:var(--ink-soft);font-size:11px;margin-top:2px;}
+  .hr-fare{font-family:'IBM Plex Mono';font-weight:600;color:var(--brand-deep);}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <header class="top">
+    <div class="conn-dot" id="connDot"></div>
+    <div class="brand-row">
+      <div class="brand">Rahlah <small>Shared shuttle · A ⇄ B</small></div>
+      <div class="avatar" id="userAvatar" onclick="goTo('screen-account')">?</div>
+    </div>
+    <div class="route-pill">
+      <div class="pt"><div class="label">From</div><div class="name" id="fromName">Point A</div></div>
+      <button class="swap-btn" onclick="swapRoute()">⇄</button>
+      <div class="pt" style="text-align:right"><div class="label">To</div><div class="name" id="toName">Point B</div></div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- AUTH -->
+    <section class="screen" id="screen-auth">
+      <div class="section-title" id="authTitle">Log in</div>
+      <div id="authError"></div>
+      <div class="field" id="fieldName" style="display:none;"><label>Your name</label><input id="regName" placeholder="e.g. Layla A." /></div>
+      <div class="field"><label>Phone number</label><input id="authPhone" placeholder="05xxxxxxxx" /></div>
+      <div class="field" id="fieldGender" style="display:none;">
+        <label>Gender</label>
+        <div class="stepper-controls" style="justify-content:flex-start;gap:10px;">
+          <button class="step-btn" id="genderMenBtn" style="width:auto;border-radius:12px;padding:10px 16px;" onclick="setRegGender('men')">♂ Man</button>
+          <button class="step-btn" id="genderWomenBtn" style="width:auto;border-radius:12px;padding:10px 16px;" onclick="setRegGender('women')">♀ Woman</button>
+        </div>
+      </div>
+      <div class="field"><label>Password</label><input id="authPassword" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter') submitAuth()" /></div>
+      <button class="cta" id="authSubmitBtn" onclick="submitAuth()">Log in</button>
+      <div class="switch-link" id="authSwitch">New here? <a onclick="toggleAuthMode()">Create an account</a></div>
+    </section>
+
+    <!-- ACCOUNT / PROFILE -->
+    <section class="screen" id="screen-account">
+      <button class="nav-back" onclick="goTo('screen-pick')">← Back to rides</button>
+      <div class="profile-row">
+        <div><div class="profile-name" id="profName">—</div><div class="profile-meta" id="profMeta">—</div></div>
+        <button class="logout-link" onclick="logout()">Log out</button>
+      </div>
+      <div class="section-title">Your trips</div>
+      <div id="historyList"></div>
+    </section>
+
+    <section class="screen" id="screen-pick">
+      <div class="section-title">Choose a ride</div>
+      <div id="vehicleList"></div>
+    </section>
+
+    <section class="screen" id="screen-party">
+      <button class="nav-back" onclick="goTo('screen-pick')">← Back</button>
+      <div class="section-title">Who's travelling?</div>
+      <p class="section-note">Add everyone in your group. Each seat still follows the front-seat and
+        same-row rules, so your party may end up split across rows if it's mixed.</p>
+      <div class="stepper-card">
+        <div class="stepper-label"><span class="g-ic">♂</span><span class="g-name">Men</span></div>
+        <div class="stepper-controls">
+          <button class="step-btn" onclick="changeParty('men',-1)">−</button>
+          <span class="step-count" id="menCount">0</span>
+          <button class="step-btn" onclick="changeParty('men',1)">+</button>
+        </div>
+      </div>
+      <div class="stepper-card">
+        <div class="stepper-label"><span class="g-ic">♀</span><span class="g-name">Women</span></div>
+        <div class="stepper-controls">
+          <button class="step-btn" onclick="changeParty('women',-1)">−</button>
+          <span class="step-count" id="womenCount">0</span>
+          <button class="step-btn" onclick="changeParty('women',1)">+</button>
+        </div>
+      </div>
+      <div class="party-summary">
+        <div><div class="ps-l">Total seats</div><div class="ps-v" id="partyTotal">0</div></div>
+        <div style="text-align:right"><div class="ps-l">Fare</div><div class="ps-v" id="partyFare">0 SAR</div></div>
+      </div>
+      <div id="partyError"></div>
+      <button class="cta" id="partyContinue" disabled onclick="requestSeats()">Request seats</button>
+    </section>
+
+    <section class="screen" id="screen-matching">
+      <button class="nav-back" onclick="leaveMatching()">← Cancel and go back</button>
+      <div class="status-line"><span class="dot"></span><span id="matchStatus">Finding you a seat…</span></div>
+      <div class="car-diagram">
+        <div class="cd-head">
+          <div class="cd-title" id="carTitle">Sedan <span class="private-badge" id="privateBadge" style="display:none;">Private</span></div>
+          <div class="cd-sub" id="carRoute">A → B</div>
+        </div>
+        <div id="seatMap"></div>
+        <div class="progress-track"><div class="progress-fill" id="fillBar" style="width:0%"></div></div>
+      </div>
+      <div class="fare-box"><div><div class="fl">Your fare</div></div><div class="fv" id="matchFare">4 SAR</div></div>
+      <div id="waitPanel" style="display:none;">
+        <p class="section-note" style="margin-bottom:10px;">Still filling up. A captain won't be sent until this
+          car is full — or accepts it as a partial trip. While you wait, you can also:</p>
+        <div id="suggestionChips"></div>
+        <button class="cta ghost" id="bookWholeInstead" onclick="switchToPrivate()">Book the whole car instead</button>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-trip">
+      <div class="section-title" id="tripStage">Captain is on the way</div>
+      <div class="captain-card">
+        <div class="cap-avatar" id="capInitials">MA</div>
+        <div><div class="cap-name" id="capName">Mohammed A.</div><div class="cap-meta" id="capMeta">Toyota Camry · White · 4211 KLM</div></div>
+      </div>
+      <div class="car-diagram">
+        <div class="cd-head"><div class="cd-title">Your booking</div><div class="cd-sub" id="seatCode">Row 1 · Seat B</div></div>
+        <div id="tripSeatMap"></div>
+      </div>
+      <div class="fare-box"><div><div class="fl">Fare due (cash to captain)</div></div><div class="fv" id="tripFare">4 SAR</div></div>
+    </section>
+
+    <section class="screen" id="screen-done">
+      <div style="text-align:center;padding:30px 10px;">
+        <div style="font-size:40px;">✅</div>
+        <div class="section-title" style="margin-top:10px;">Trip complete</div>
+        <p style="font-size:13px;color:var(--ink-soft);">Thanks for riding with Rahlah.</p>
+      </div>
+      <div class="fare-box"><div><div class="fl">Total paid</div></div><div class="fv" id="doneFare">4 SAR</div></div>
+      <button class="cta" onclick="resetToHome()">Book another ride</button>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// ===== CONFIGURE BEFORE DEPLOYING SEPARATELY FROM THE BACKEND =====
+// Same-origin (local dev, or single combined deploy) needs no change. If this
+// ===== EDIT THIS BEFORE DEPLOYING AS ITS OWN STATIC SITE =====
+// Leave blank for local dev (falls back to http://localhost:3000) or if this
+// file is served by the same server as the API. If deployed separately, set
+// this to your backend's URL, e.g. 'https://rahlah-backend.onrender.com'.
+const CONFIGURED_API_BASE = '';
+// ===============================================================
+const API_BASE = CONFIGURED_API_BASE || (location.hostname === 'localhost' ? 'http://localhost:3000' : '');
+const WS_BASE = API_BASE ? API_BASE.replace(/^http/, 'ws') : `${location.protocol==='https:'?'wss:':'ws:'}//${location.host}`;
+
+const VEHICLE_ICONS = { sedan:'🚗', family:'🚙', minibus:'🚐' };
+const VEHICLE_ROWLABEL = { sedan:'Back row', family:'Row', minibus:'Row' };
+let VEHICLES = {};
+let authMode = 'login';
+let regGender = null;
+let token = localStorage.getItem('rahlah_customer_token') || null;
+
+let state = {
+  customer: null, vehicleType: null, direction: 'A_TO_B', mode: 'shared',
+  party: { men:0, women:0 }, carId: null, mySeats: [], car: null, matched:false, done:false,
+};
+
+function authHeaders(json){
+  const h = { 'Authorization': 'Bearer ' + token };
+  if (json) h['Content-Type'] = 'application/json';
+  return h;
+}
+
+let ws;
+function connectWS(){
+  ws = new WebSocket(`${WS_BASE}/ws`);
+  ws.onopen = () => document.getElementById('connDot').classList.add('live');
+  ws.onclose = () => { document.getElementById('connDot').classList.remove('live'); setTimeout(connectWS, 1500); };
+  ws.onmessage = (evt) => {
+    const msg = JSON.parse(evt.data);
+    if (msg.type === 'car_update' && state.carId && msg.car.id === state.carId) handleCarUpdate(msg.car);
+  };
+}
+connectWS();
+setInterval(() => {
+  if (state.carId && !state.done) {
+    fetch(`${API_BASE}/api/car/${state.carId}`).then(r=>r.ok?r.json():null).then(car=>{ if(car) handleCarUpdate(car); }).catch(()=>{});
+  }
+}, 4000);
+
+fetch(API_BASE + '/api/vehicles').then(r=>r.json()).then(v=>{ VEHICLES = v; renderVehicleList(); }).catch(()=>{
+  document.getElementById('vehicleList').innerHTML = '<div class="error-box">Can\'t reach the server. Is it running?</div>';
+});
+
+function goTo(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+function totalSeats(vtype){ const c = VEHICLES[vtype]; return c.frontSeats + c.rows*3; }
+
+/* ---------- auth ---------- */
+function toggleAuthMode(){
+  authMode = authMode==='login' ? 'register' : 'login';
+  document.getElementById('authTitle').textContent = authMode==='login' ? 'Log in' : 'Create an account';
+  document.getElementById('authSubmitBtn').textContent = authMode==='login' ? 'Log in' : 'Create account';
+  document.getElementById('fieldName').style.display = authMode==='register' ? 'block' : 'none';
+  document.getElementById('fieldGender').style.display = authMode==='register' ? 'block' : 'none';
+  document.getElementById('authSwitch').innerHTML = authMode==='login'
+    ? `New here? <a onclick="toggleAuthMode()">Create an account</a>`
+    : `Already have an account? <a onclick="toggleAuthMode()">Log in</a>`;
+  document.getElementById('authError').innerHTML = '';
+}
+function setRegGender(g){
+  regGender = g;
+  document.getElementById('genderMenBtn').style.background = g==='men' ? 'var(--men)' : '#fff';
+  document.getElementById('genderMenBtn').style.color = g==='men' ? '#fff' : 'var(--brand-deep)';
+  document.getElementById('genderWomenBtn').style.background = g==='women' ? 'var(--women)' : '#fff';
+  document.getElementById('genderWomenBtn').style.color = g==='women' ? '#fff' : 'var(--brand-deep)';
+}
+async function submitAuth(){
+  const phone = document.getElementById('authPhone').value.trim();
+  const password = document.getElementById('authPassword').value;
+  document.getElementById('authError').innerHTML = '';
+  if (!phone || !password){ document.getElementById('authError').innerHTML = '<div class="error-box">Enter phone and password.</div>'; return; }
+  const body = authMode==='login' ? { phone, password } : { phone, password, name: document.getElementById('regName').value.trim(), gender: regGender };
+  if (authMode==='register' && (!body.name || !body.gender)){ document.getElementById('authError').innerHTML = '<div class="error-box">Name and gender are required.</div>'; return; }
+  try{
+    const res = await fetch(`${API_BASE}/api/customer/${authMode}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (!res.ok){ document.getElementById('authError').innerHTML = `<div class="error-box">${data.error}</div>`; return; }
+    token = data.token;
+    localStorage.setItem('rahlah_customer_token', token);
+    state.customer = data.customer;
+    afterAuth(data.car);
+  } catch(e){ document.getElementById('authError').innerHTML = '<div class="error-box">Couldn\'t reach the server.</div>'; }
+}
+function afterAuth(car){
+  document.getElementById('userAvatar').textContent = state.customer.gender==='men' ? '♂' : '♀';
+  updateProfileUI();
+  if (car){
+    state.carId = car.id; state.vehicleType = car.vehicleType; state.direction = car.direction;
+    state.mode = car.mode; state.mySeats = car.mode==='private' ? 'ALL' : findMySeats(car);
+    if (car.status === 'in_trip' || car.status === 'ready'){ state.matched = true; enterTripScreen(car); }
+    else { state.matched = false; enterMatchingScreenFromCar(car); }
+  } else {
+    renderVehicleList();
+    goTo('screen-pick');
+  }
+}
+function findMySeats(car){
+  const mine = [];
+  car.front.forEach((f,fi)=>{}); // seat ownership for resumed sessions isn't tracked client-side beyond bookings; highlight nothing extra
+  return [];
+}
+function logout(){
+  token = null; state.customer = null; state.carId = null; state.car = null;
+  localStorage.removeItem('rahlah_customer_token');
+  goTo('screen-auth');
+}
+function updateProfileUI(){
+  document.getElementById('profName').textContent = state.customer.name;
+  document.getElementById('profMeta').textContent = state.customer.phone + ' · ' + (state.customer.gender==='men'?'Man':'Woman');
+  renderCustomerHistory();
+}
+function renderCustomerHistory(){
+  const wrap = document.getElementById('historyList');
+  const hist = state.customer.tripHistory || [];
+  if (!hist.length){ wrap.innerHTML = '<div style="font-size:13px;color:var(--ink-soft);">No trips yet.</div>'; return; }
+  wrap.innerHTML = hist.slice(0,20).map(h => `
+    <div class="history-row">
+      <div><div>${VEHICLES[h.vehicleType].name}${h.mode==='private'?' (private)':''} · ${h.direction==='A_TO_B'?'A → B':'B → A'}</div><div class="hr-meta">${h.seats} seat${h.seats===1?'':'s'}</div></div>
+      <div class="hr-fare">${h.fare} SAR</div>
+    </div>
+  `).join('');
+}
+
+/* ---------- vehicle picking / party ---------- */
+function swapRoute(){
+  state.direction = state.direction==='A_TO_B' ? 'B_TO_A' : 'A_TO_B';
+  const from = document.getElementById('fromName'); const to = document.getElementById('toName');
+  const tmp = from.textContent; from.textContent = to.textContent; to.textContent = tmp;
+}
+function renderVehicleList(){
+  const wrap = document.getElementById('vehicleList');
+  wrap.innerHTML = '';
+  Object.entries(VEHICLES).forEach(([key,cfg])=>{
+    const div = document.createElement('div');
+    div.className = 'vehicle-card';
+    div.innerHTML = `
+      <div class="vc-top">
+        <div class="v-icon">${VEHICLE_ICONS[key]}</div>
+        <div class="v-info">
+          <div class="v-name">${cfg.name}</div>
+          <div class="v-seats">${cfg.frontSeats} front (men) + ${cfg.rows} row${cfg.rows>1?'s':''} of 3 (men or women) · ${totalSeats(key)} seats total</div>
+        </div>
+        <div class="v-price">${cfg.price} SAR<span>per seat</span></div>
+      </div>
+      <div class="vc-full">
+        <div class="vcf-label">Book the whole car, just for your group</div>
+        <button class="vc-full-btn" data-action="full">${cfg.fullPrice} SAR</button>
+      </div>
+    `;
+    div.querySelector('.vc-top').onclick = ()=>selectSharedVehicle(key);
+    div.querySelector('[data-action="full"]').onclick = (e)=>{ e.stopPropagation(); bookPrivate(key); };
+    wrap.appendChild(div);
+  });
+}
+function selectSharedVehicle(key){
+  state.vehicleType = key; state.mode='shared';
+  state.party = { men: state.customer.gender==='men'?1:0, women: state.customer.gender==='women'?1:0 };
+  document.getElementById('partyError').innerHTML='';
+  updatePartyUI();
+  goTo('screen-party');
+}
+function changeParty(kind, delta){
+  const next = state.party[kind] + delta;
+  const other = state.party[kind==='men'?'women':'men'];
+  if (next<0) return;
+  if (next+other > totalSeats(state.vehicleType)) return;
+  state.party[kind] = next;
+  updatePartyUI();
+}
+function updatePartyUI(){
+  document.getElementById('menCount').textContent = state.party.men;
+  document.getElementById('womenCount').textContent = state.party.women;
+  const total = state.party.men + state.party.women;
+  document.getElementById('partyTotal').textContent = total;
+  document.getElementById('partyFare').textContent = (total*VEHICLES[state.vehicleType].price) + ' SAR';
+  document.getElementById('partyContinue').disabled = total===0;
+}
+
+async function requestSeats(){
+  document.getElementById('partyError').innerHTML='';
+  document.getElementById('partyContinue').disabled = true;
+  try{
+    const res = await fetch(API_BASE + '/api/book', {
+      method:'POST', headers: authHeaders(true),
+      body: JSON.stringify({ vehicleType: state.vehicleType, direction: state.direction, party: state.party }),
+    });
+    const data = await res.json();
+    if (!res.ok){
+      document.getElementById('partyError').innerHTML = `<div class="error-box">${data.error}</div>`;
+      document.getElementById('partyContinue').disabled = false;
+      return;
+    }
+    state.carId = data.carId; state.mySeats = data.mySeats; state.car = data.car;
+    state.matched = false; state.done = false;
+    enterMatchingScreen(data.fare);
+  } catch(e){
+    document.getElementById('partyError').innerHTML = `<div class="error-box">Couldn't reach the server. Try again.</div>`;
+    document.getElementById('partyContinue').disabled = false;
+  }
+}
+
+async function bookPrivate(vehicleType){
+  state.vehicleType = vehicleType; state.mode='private'; state.mySeats='ALL';
+  try{
+    const res = await fetch(API_BASE + '/api/book-private', {
+      method:'POST', headers: authHeaders(true),
+      body: JSON.stringify({ vehicleType, direction: state.direction }),
+    });
+    const data = await res.json();
+    if (!res.ok){ alert(data.error || 'Could not book the whole car.'); return; }
+    state.carId = data.carId; state.car = data.car;
+    state.matched=false; state.done=false;
+    enterMatchingScreen(data.fare);
+  } catch(e){ alert("Couldn't reach the server."); }
+}
+
+let waitTimer = null;
+function enterMatchingScreen(fare){
+  goTo('screen-matching');
+  document.getElementById('carTitle').firstChild.textContent = VEHICLES[state.vehicleType].name + ' ';
+  document.getElementById('privateBadge').style.display = state.mode==='private' ? 'inline-block' : 'none';
+  document.getElementById('carRoute').textContent = state.direction==='A_TO_B' ? 'A → B' : 'B → A';
+  document.getElementById('matchFare').textContent = fare + ' SAR';
+  document.getElementById('waitPanel').style.display = 'none';
+  renderSeatMap('seatMap', state.car, true);
+  updateMatchProgress(state.car);
+  clearTimeout(waitTimer);
+  if (state.mode==='shared'){ waitTimer = setTimeout(showWaitOptions, 15000); }
+}
+function enterMatchingScreenFromCar(car){
+  state.car = car; state.vehicleType = car.vehicleType; state.direction = car.direction; state.mode = car.mode;
+  const fare = car.mode==='private' ? VEHICLES[car.vehicleType].fullPrice : (state.party.men+state.party.women)*VEHICLES[car.vehicleType].price;
+  enterMatchingScreen(fare || VEHICLES[car.vehicleType].price);
+}
+
+function showWaitOptions(){
+  if (state.matched || state.done || !document.getElementById('screen-matching').classList.contains('active')) return;
+  document.getElementById('waitPanel').style.display = 'block';
+  fetch(`${API_BASE}/api/vacancies?direction=${state.direction}`).then(r=>r.json()).then(vac=>{
+    const wrap = document.getElementById('suggestionChips');
+    wrap.innerHTML = '';
+    Object.entries(vac).forEach(([vtype, info])=>{
+      if (vtype===state.vehicleType || !info) return;
+      if (info.openMen < state.party.men || info.openWomen < state.party.women) return;
+      const div = document.createElement('div');
+      div.className = 'suggest-chip';
+      div.innerHTML = `
+        <div><div class="sc-name">${VEHICLES[vtype].name}</div><div class="sc-meta">${info.openTotal} seat${info.openTotal===1?'':'s'} open right now</div></div>
+        <div class="sc-go">Switch →</div>`;
+      div.onclick = () => switchVehicle(vtype);
+      wrap.appendChild(div);
+    });
+    if (!wrap.children.length){
+      wrap.innerHTML = '<p class="section-note" style="margin:0 0 10px;">No open seats in other vehicles for your group size right now.</p>';
+    }
+  }).catch(()=>{});
+}
+
+async function releaseCurrentSeats(){
+  if (state.mode==='shared' && state.carId && Array.isArray(state.mySeats) && state.mySeats.length){
+    try{
+      await fetch(`${API_BASE}/api/book/${state.carId}/cancel`, {
+        method:'POST', headers: authHeaders(true),
+        body: JSON.stringify({ seats: state.mySeats }),
+      });
+    } catch(e){}
+  }
+}
+async function switchVehicle(vtype){ await releaseCurrentSeats(); state.vehicleType = vtype; requestSeats(); }
+async function switchToPrivate(){ await releaseCurrentSeats(); bookPrivate(state.vehicleType); }
+async function leaveMatching(){ clearTimeout(waitTimer); await releaseCurrentSeats(); goTo(state.mode==='private' ? 'screen-pick' : 'screen-party'); }
+
+function isMySeat(type, ri, si){
+  if (state.mySeats==='ALL') return true;
+  if (!Array.isArray(state.mySeats)) return false;
+  return state.mySeats.some(s => s.type===type && (type==='front' ? s.idx===si : (s.row===ri && s.idx===si)));
+}
+function renderSeatMap(elId, car, showYou){
+  const cfg = VEHICLES[car.vehicleType];
+  const rowLabel = VEHICLE_ROWLABEL[car.vehicleType];
+  const el = document.getElementById(elId);
+  let html = '<div class="driver-row">';
+  car.front.forEach((f, fi)=>{
+    const you = showYou && isMySeat('front', null, fi);
+    const cls = f ? f : '';
+    html += `<div class="driver-unit"><div class="seat ${cls} ${you?'you':''}">${f ? (f==='private'?'★':'♂') : '—'}</div><div class="dnote">${cfg.frontSeats>1?'driver row':'driver'}</div></div>`;
+  });
+  html += '</div>';
+  car.rows.forEach((r, ri)=>{
+    const label = r.gender==='private' ? 'Private' : (r.gender ? (r.gender==='men'?'Men':'Women') : 'open');
+    html += `<div class="row-tag">${rowLabel}${cfg.rows>1?' '+(ri+1):''} · ${label}</div>`;
+    html += '<div class="seat-row">';
+    r.seats.forEach((s, si)=>{
+      const you = showYou && isMySeat('row', ri, si);
+      const cls = s ? s : '';
+      const icon = s==='private' ? '★' : (s ? (s==='men'?'♂':'♀') : '·');
+      html += `<div class="seat ${cls} ${you?'you':''}">${icon}</div>`;
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function updateMatchProgress(car){
+  const total = totalSeats(car.vehicleType);
+  const filled = car.front.filter(s=>s!==null).length + car.rows.reduce((n,r)=>n+r.seats.filter(s=>s!==null).length,0);
+  const left = total-filled;
+  document.getElementById('fillBar').style.width = Math.round((filled/total)*100) + '%';
+  document.getElementById('matchStatus').textContent = state.mode==='private'
+    ? 'This car is reserved just for your group — matching a captain…'
+    : (left===0 ? 'Car is full — matching you with a captain…' : `${left} seat${left===1?'':'s'} left to fill`);
+}
+
+function handleCarUpdate(car){
+  state.car = car;
+  if (!state.done && document.getElementById('screen-matching').classList.contains('active')){
+    renderSeatMap('seatMap', car, true);
+    updateMatchProgress(car);
+  }
+  if (car.status === 'ready' && !state.matched && !state.done){
+    state.matched = true;
+    enterTripScreen(car);
+  } else if (car.status === 'in_trip' && state.matched && !state.done){
+    document.getElementById('tripStage').textContent = 'On the way to ' + (state.direction==='A_TO_B' ? 'Point B' : 'Point A');
+    renderSeatMap('tripSeatMap', car, true);
+  } else if (car.status === 'completed' && !state.done){
+    state.done = true;
+    enterDoneScreen(car);
+  } else if (state.matched && !state.done && document.getElementById('screen-trip').classList.contains('active')){
+    renderSeatMap('tripSeatMap', car, true);
+  }
+}
+
+function enterTripScreen(car){
+  clearTimeout(waitTimer);
+  document.getElementById('capName').textContent = car.captainName || 'Your captain';
+  document.getElementById('capMeta').textContent = `${VEHICLES[car.vehicleType].name} · Plate ${car.captainPlate || '—'}`;
+  document.getElementById('capInitials').textContent = (car.captainName||'C A').split(' ').map(w=>w[0]).join('').slice(0,2);
+  const seatLabel = state.mode==='private'
+    ? `Whole car · ${totalSeats(car.vehicleType)} seats`
+    : `${Array.isArray(state.mySeats)?state.mySeats.length:1} seat${(Array.isArray(state.mySeats)&&state.mySeats.length===1)?'':'s'} · ${state.party.men} men, ${state.party.women} women`;
+  document.getElementById('seatCode').textContent = seatLabel;
+  const fare = state.mode==='private' ? VEHICLES[car.vehicleType].fullPrice : (state.party.men+state.party.women)*VEHICLES[car.vehicleType].price;
+  document.getElementById('tripFare').textContent = fare + ' SAR';
+  document.getElementById('tripStage').textContent = car.status==='in_trip' ? ('On the way to ' + (state.direction==='A_TO_B' ? 'Point B' : 'Point A')) : 'Captain is on the way';
+  renderSeatMap('tripSeatMap', car, true);
+  goTo('screen-trip');
+}
+
+function enterDoneScreen(car){
+  const fare = state.mode==='private' ? VEHICLES[car.vehicleType].fullPrice : (state.party.men+state.party.women)*VEHICLES[car.vehicleType].price;
+  document.getElementById('doneFare').textContent = fare + ' SAR';
+  // refresh profile trip history in the background
+  fetch(API_BASE + '/api/customer/me', { headers: authHeaders() }).then(r=>r.ok?r.json():null).then(d=>{ if(d){ state.customer = d.customer; } }).catch(()=>{});
+  goTo('screen-done');
+}
+
+function resetToHome(){
+  state.vehicleType=null; state.carId=null; state.mySeats=[]; state.car=null;
+  state.party = {men:0, women:0}; state.mode='shared'; state.matched=false; state.done=false;
+  renderVehicleList();
+  goTo('screen-pick');
+}
+
+/* ---------- init: resume session if we have a token ---------- */
+if (token){
+  fetch(API_BASE + '/api/customer/me', { headers: authHeaders() }).then(r=>r.ok?r.json():Promise.reject()).then(data=>{
+    state.customer = data.customer;
+    afterAuth(data.car);
+  }).catch(()=>{ token = null; localStorage.removeItem('rahlah_customer_token'); goTo('screen-auth'); });
+} else {
+  goTo('screen-auth');
+}
+</script>
+</body>
+</html>
