@@ -6,7 +6,6 @@
 <title>Rahlah — Customer</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 <style>
   :root{
     --bg:#F2ECDC; --ink:#1C2620; --ink-soft:#5B6259; --panel:#FFFDF6;
@@ -95,11 +94,6 @@
   .private-badge{display:inline-block;background:var(--gold);color:var(--brand-deep);font-family:'Space Grotesk';font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;padding:4px 9px;border-radius:8px;margin-left:8px;}
 
   .captain-card{background:var(--brand);color:#fff;border-radius:var(--radius);padding:20px;display:flex;align-items:center;gap:14px;margin-bottom:16px;}
-  .map-card{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;}
-  #tripMap{width:100%;height:220px;background:var(--bg);}
-  .map-note{padding:10px 14px;font-size:11.5px;color:var(--ink-soft);border-top:1px solid var(--line);}
-  .leaflet-marker-icon.captain-pin{background:var(--brand);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;}
-  .leaflet-marker-icon.point-pin{background:var(--gold);border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);}
   .cap-avatar{width:52px;height:52px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:18px;color:var(--brand-deep);flex-shrink:0;}
   .cap-name{font-family:'Space Grotesk';font-weight:600;font-size:16px;}
   .cap-meta{font-size:12px;opacity:0.75;margin-top:3px;}
@@ -230,10 +224,6 @@
         <div class="cap-avatar" id="capInitials">MA</div>
         <div><div class="cap-name" id="capName">Mohammed A.</div><div class="cap-meta" id="capMeta">Toyota Camry · White · 4211 KLM</div></div>
       </div>
-      <div class="map-card">
-        <div id="tripMap"></div>
-        <div class="map-note" id="mapNote">Waiting for the captain's location…</div>
-      </div>
       <div class="car-diagram">
         <div class="cd-head"><div class="cd-title">Your booking</div><div class="cd-sub" id="seatCode">Row 1 · Seat B</div></div>
         <div id="tripSeatMap"></div>
@@ -254,18 +244,14 @@
   </main>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
-// Note: if the map tiles don't load, the SRI integrity hashes above (for
-// leaflet.css/js) may be out of date for whatever version ships from unpkg —
-// remove the integrity="..." attributes from both tags as a first troubleshooting step.
 // ===== CONFIGURE BEFORE DEPLOYING SEPARATELY FROM THE BACKEND =====
 // Same-origin (local dev, or single combined deploy) needs no change. If this
 // ===== EDIT THIS BEFORE DEPLOYING AS ITS OWN STATIC SITE =====
 // Leave blank for local dev (falls back to http://localhost:3000) or if this
 // file is served by the same server as the API. If deployed separately, set
 // this to your backend's URL, e.g. 'https://rahlah-backend.onrender.com'.
-const CONFIGURED_API_BASE = 'https://rahlah-backend.onrender.com';
+const CONFIGURED_API_BASE = '';
 // ===============================================================
 const API_BASE = CONFIGURED_API_BASE || (location.hostname === 'localhost' ? 'http://localhost:3000' : '');
 const WS_BASE = API_BASE ? API_BASE.replace(/^http/, 'ws') : `${location.protocol==='https:'?'wss:':'ws:'}//${location.host}`;
@@ -273,12 +259,6 @@ const WS_BASE = API_BASE ? API_BASE.replace(/^http/, 'ws') : `${location.protoco
 const VEHICLE_ICONS = { sedan:'🚗', family:'🚙', minibus:'🚐' };
 const VEHICLE_ROWLABEL = { sedan:'Back row', family:'Row', minibus:'Row' };
 let VEHICLES = {};
-let POINTS = { A: { full: 'Point A', short: 'A' }, B: { full: 'Point B', short: 'B' } }; // overwritten by /api/points on load
-function routeLabel(direction, useShort){
-  const a = useShort ? POINTS.A.short : POINTS.A.full;
-  const b = useShort ? POINTS.B.short : POINTS.B.full;
-  return direction==='A_TO_B' ? `${a} → ${b}` : `${b} → ${a}`;
-}
 let authMode = 'login';
 let regGender = null;
 let token = localStorage.getItem('rahlah_customer_token') || null;
@@ -314,11 +294,6 @@ setInterval(() => {
 fetch(API_BASE + '/api/vehicles').then(r=>r.json()).then(v=>{ VEHICLES = v; renderVehicleList(); }).catch(()=>{
   document.getElementById('vehicleList').innerHTML = '<div class="error-box">Can\'t reach the server. Is it running?</div>';
 });
-fetch(API_BASE + '/api/points').then(r=>r.json()).then(p=>{
-  POINTS = p;
-  document.getElementById('fromName').textContent = POINTS.A.full;
-  document.getElementById('toName').textContent = POINTS.B.full;
-}).catch(()=>{});
 
 function goTo(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -396,7 +371,7 @@ function renderCustomerHistory(){
   if (!hist.length){ wrap.innerHTML = '<div style="font-size:13px;color:var(--ink-soft);">No trips yet.</div>'; return; }
   wrap.innerHTML = hist.slice(0,20).map(h => `
     <div class="history-row">
-      <div><div>${VEHICLES[h.vehicleType].name}${h.mode==='private'?' (private)':''} · ${routeLabel(h.direction, true)}</div><div class="hr-meta">${h.seats} seat${h.seats===1?'':'s'}</div></div>
+      <div><div>${VEHICLES[h.vehicleType].name}${h.mode==='private'?' (private)':''} · ${h.direction==='A_TO_B'?'A → B':'B → A'}</div><div class="hr-meta">${h.seats} seat${h.seats===1?'':'s'}</div></div>
       <div class="hr-fare">${h.fare} SAR</div>
     </div>
   `).join('');
@@ -500,7 +475,7 @@ function enterMatchingScreen(fare){
   goTo('screen-matching');
   document.getElementById('carTitle').firstChild.textContent = VEHICLES[state.vehicleType].name + ' ';
   document.getElementById('privateBadge').style.display = state.mode==='private' ? 'inline-block' : 'none';
-  document.getElementById('carRoute').textContent = routeLabel(state.direction, true);
+  document.getElementById('carRoute').textContent = state.direction==='A_TO_B' ? 'A → B' : 'B → A';
   document.getElementById('matchFare').textContent = fare + ' SAR';
   document.getElementById('waitPanel').style.display = 'none';
   renderSeatMap('seatMap', state.car, true);
@@ -592,38 +567,6 @@ function updateMatchProgress(car){
     : (left===0 ? 'Car is full — matching you with a captain…' : `${left} seat${left===1?'':'s'} left to fill`);
 }
 
-let tripMap = null;
-let captainMarker = null;
-
-function pointIcon(){ return L.divIcon({ className: 'point-pin', iconSize: [16,16] }); }
-function captainIcon(){ return L.divIcon({ className: 'captain-pin', html: '🚗', iconSize: [30,30] }); }
-
-function ensureTripMap(){
-  if (tripMap || !POINTS.A.lat) return; // POINTS not loaded yet — map init is skipped, tried again next update
-  tripMap = L.map('tripMap', { zoomControl: false, attributionControl: true });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    maxZoom: 19,
-  }).addTo(tripMap);
-  L.marker([POINTS.A.lat, POINTS.A.lng], { icon: pointIcon() }).addTo(tripMap).bindPopup(POINTS.A.full);
-  L.marker([POINTS.B.lat, POINTS.B.lng], { icon: pointIcon() }).addTo(tripMap).bindPopup(POINTS.B.full);
-  tripMap.fitBounds(L.latLngBounds([[POINTS.A.lat, POINTS.A.lng], [POINTS.B.lat, POINTS.B.lng]]), { padding: [30, 30] });
-  setTimeout(() => tripMap && tripMap.invalidateSize(), 200);
-}
-
-function updateCaptainMarker(loc){
-  if (!loc) return;
-  ensureTripMap();
-  if (!tripMap) return;
-  const latlng = [loc.lat, loc.lng];
-  if (!captainMarker){
-    captainMarker = L.marker(latlng, { icon: captainIcon() }).addTo(tripMap);
-  } else {
-    captainMarker.setLatLng(latlng);
-  }
-  document.getElementById('mapNote').textContent = 'Live — captain location updates automatically';
-}
-
 function handleCarUpdate(car){
   state.car = car;
   if (!state.done && document.getElementById('screen-matching').classList.contains('active')){
@@ -634,7 +577,7 @@ function handleCarUpdate(car){
     state.matched = true;
     enterTripScreen(car);
   } else if (car.status === 'in_trip' && state.matched && !state.done){
-    document.getElementById('tripStage').textContent = 'On the way to ' + (state.direction==='A_TO_B' ? POINTS.B.full : POINTS.A.full);
+    document.getElementById('tripStage').textContent = 'On the way to ' + (state.direction==='A_TO_B' ? 'Point B' : 'Point A');
     renderSeatMap('tripSeatMap', car, true);
   } else if (car.status === 'completed' && !state.done){
     state.done = true;
@@ -642,7 +585,6 @@ function handleCarUpdate(car){
   } else if (state.matched && !state.done && document.getElementById('screen-trip').classList.contains('active')){
     renderSeatMap('tripSeatMap', car, true);
   }
-  if (car.captainLocation) updateCaptainMarker(car.captainLocation);
 }
 
 function enterTripScreen(car){
@@ -656,11 +598,9 @@ function enterTripScreen(car){
   document.getElementById('seatCode').textContent = seatLabel;
   const fare = state.mode==='private' ? VEHICLES[car.vehicleType].fullPrice : (state.party.men+state.party.women)*VEHICLES[car.vehicleType].price;
   document.getElementById('tripFare').textContent = fare + ' SAR';
-  document.getElementById('tripStage').textContent = car.status==='in_trip' ? ('On the way to ' + (state.direction==='A_TO_B' ? POINTS.B.full : POINTS.A.full)) : 'Captain is on the way';
+  document.getElementById('tripStage').textContent = car.status==='in_trip' ? ('On the way to ' + (state.direction==='A_TO_B' ? 'Point B' : 'Point A')) : 'Captain is on the way';
   renderSeatMap('tripSeatMap', car, true);
   goTo('screen-trip');
-  ensureTripMap();
-  if (car.captainLocation) updateCaptainMarker(car.captainLocation);
 }
 
 function enterDoneScreen(car){
