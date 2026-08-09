@@ -286,6 +286,7 @@ const WS_BASE = API_BASE ? API_BASE.replace(/^http/, 'ws') : `${location.protoco
 const VEHICLE_ICONS = { sedan:'🚗', family:'🚙', minibus:'🚐' };
 const VEHICLE_ROWLABEL = { sedan:'Back row', family:'Row', minibus:'Row' };
 let VEHICLES = {};
+let FARE = {}; // vehicleType -> {seat, full}, refetched whenever the route (From/To) changes
 let POINTS = { A: { full: 'Point A', short: 'A' }, B: { full: 'Point B', short: 'B' } }; // overwritten by /api/points on load
 let DIRECTIONS = { A_TO_B: {from:'A',to:'B'}, B_TO_A: {from:'B',to:'A'} }; // overwritten by /api/directions on load
 let routeFrom = 'A', routeTo = 'B';
@@ -351,6 +352,7 @@ function renderRouteSelectors(){
   document.getElementById('toSelect').innerHTML = ids.filter(id => id !== routeFrom).map(id =>
     `<option value="${id}" ${id===routeTo?'selected':''}>${POINTS[id].full}</option>`).join('');
   state.direction = `${routeFrom}_TO_${routeTo}`;
+  refreshFare();
 }
 function onFromChange(){
   routeFrom = document.getElementById('fromSelect').value;
@@ -360,6 +362,14 @@ function onFromChange(){
 function onToChange(){
   routeTo = document.getElementById('toSelect').value;
   state.direction = `${routeFrom}_TO_${routeTo}`;
+  refreshFare();
+}
+async function refreshFare(){
+  try{
+    FARE = await fetch(`${API_BASE}/api/fare?direction=${state.direction}`).then(r=>r.json());
+  } catch(e){ FARE = {}; }
+  if (document.getElementById('screen-pick').classList.contains('active')) renderVehicleList();
+  if (document.getElementById('screen-party').classList.contains('active')) updatePartyUI();
 }
 
 function goTo(id){
@@ -479,6 +489,7 @@ function renderVehicleList(){
   const wrap = document.getElementById('vehicleList');
   wrap.innerHTML = '';
   Object.entries(VEHICLES).forEach(([key,cfg])=>{
+    const fare = FARE[key];
     const div = document.createElement('div');
     div.className = 'vehicle-card';
     div.innerHTML = `
@@ -488,11 +499,11 @@ function renderVehicleList(){
           <div class="v-name">${cfg.name}</div>
           <div class="v-seats">${cfg.frontSeats} front (men) + ${cfg.rows} row${cfg.rows>1?'s':''} of 3 (men or women) · ${totalSeats(key)} seats total</div>
         </div>
-        <div class="v-price">${cfg.price} SAR<span>per seat</span></div>
+        <div class="v-price">${fare ? fare.seat + ' SAR' : '—'}<span>per seat</span></div>
       </div>
       <div class="vc-full">
         <div class="vcf-label">Book the whole car, just for your group</div>
-        <button class="vc-full-btn" data-action="full">${cfg.fullPrice} SAR</button>
+        <button class="vc-full-btn" data-action="full" ${fare?'':'disabled'}>${fare ? fare.full + ' SAR' : '—'}</button>
       </div>
     `;
     div.querySelector('.vc-top').onclick = ()=>selectSharedVehicle(key);
@@ -520,7 +531,7 @@ function updatePartyUI(){
   document.getElementById('womenCount').textContent = state.party.women;
   const total = state.party.men + state.party.women;
   document.getElementById('partyTotal').textContent = total;
-  document.getElementById('partyFare').textContent = (total*VEHICLES[state.vehicleType].price) + ' SAR';
+  document.getElementById('partyFare').textContent = (total*(FARE[state.vehicleType]?.seat||0)) + ' SAR';
   document.getElementById('partyContinue').disabled = total===0;
 }
 
@@ -575,10 +586,13 @@ function enterMatchingScreen(fare){
   clearTimeout(waitTimer);
   if (state.mode==='shared'){ waitTimer = setTimeout(showWaitOptions, 15000); }
 }
-function enterMatchingScreenFromCar(car){
+async function enterMatchingScreenFromCar(car){
   state.car = car; state.vehicleType = car.vehicleType; state.direction = car.direction; state.mode = car.mode;
-  const fare = car.mode==='private' ? VEHICLES[car.vehicleType].fullPrice : (state.party.men+state.party.women)*VEHICLES[car.vehicleType].price;
-  enterMatchingScreen(fare || VEHICLES[car.vehicleType].price);
+  let fareData = {};
+  try{ fareData = await fetch(`${API_BASE}/api/fare?direction=${car.direction}`).then(r=>r.json()); } catch(e){}
+  const f = fareData[car.vehicleType];
+  const fare = car.mode==='private' ? (f ? f.full : 0) : (state.party.men+state.party.women)*(f ? f.seat : 0);
+  enterMatchingScreen(fare);
 }
 
 function showWaitOptions(){
@@ -724,7 +738,8 @@ function enterTripScreen(car){
     ? `Whole car · ${totalSeats(car.vehicleType)} seats`
     : `${Array.isArray(state.mySeats)?state.mySeats.length:1} seat${(Array.isArray(state.mySeats)&&state.mySeats.length===1)?'':'s'} · ${state.party.men} men, ${state.party.women} women`;
   document.getElementById('seatCode').textContent = seatLabel;
-  const fare = state.mode==='private' ? VEHICLES[car.vehicleType].fullPrice : (state.party.men+state.party.women)*VEHICLES[car.vehicleType].price;
+  const tf = FARE[car.vehicleType];
+  const fare = state.mode==='private' ? (tf?tf.full:0) : (state.party.men+state.party.women)*(tf?tf.seat:0);
   document.getElementById('tripFare').textContent = fare + ' SAR';
   document.getElementById('tripStage').textContent = car.status==='in_trip' ? ('On the way to ' + destinationName(state.direction)) : 'Captain is on the way';
   renderSeatMap('tripSeatMap', car, true);
@@ -734,7 +749,8 @@ function enterTripScreen(car){
 }
 
 function enterDoneScreen(car){
-  const fare = state.mode==='private' ? VEHICLES[car.vehicleType].fullPrice : (state.party.men+state.party.women)*VEHICLES[car.vehicleType].price;
+  const df = FARE[car.vehicleType];
+  const fare = state.mode==='private' ? (df?df.full:0) : (state.party.men+state.party.women)*(df?df.seat:0);
   document.getElementById('doneFare').textContent = fare + ' SAR';
   // refresh profile trip history in the background
   fetch(API_BASE + '/api/customer/me', { headers: authHeaders() }).then(r=>r.ok?r.json():null).then(d=>{ if(d){ state.customer = d.customer; } }).catch(()=>{});
