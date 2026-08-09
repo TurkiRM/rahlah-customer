@@ -29,6 +29,9 @@
   .route-pill .pt{flex:1;}
   .route-pill .pt .label{font-size:10px;text-transform:uppercase;letter-spacing:1px;opacity:0.6;}
   .route-pill .pt .name{font-family:'Space Grotesk';font-weight:600;font-size:14px;margin-top:2px;}
+  .route-select{background:transparent;border:none;color:#fff;font-family:'Space Grotesk';font-weight:600;font-size:13px;margin-top:2px;padding:0;max-width:120px;cursor:pointer;}
+  .route-select option{color:#111;}
+  .route-select-right{text-align:right;text-align-last:right;}
   .swap-btn{background:var(--gold);border:none;width:32px;height:32px;border-radius:50%;color:var(--brand-deep);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   main{flex:1;padding:20px 20px 100px;overflow-y:auto;}
   .section-title{font-family:'Space Grotesk';font-weight:600;font-size:15px;margin:6px 0 12px;color:var(--brand-deep);}
@@ -137,9 +140,9 @@
       </div>
     </div>
     <div class="route-pill">
-      <div class="pt"><div class="label">From</div><div class="name" id="fromName">Point A</div></div>
+      <div class="pt"><div class="label">From</div><select class="route-select" id="fromSelect" onchange="onFromChange()"></select></div>
       <button class="swap-btn" onclick="swapRoute()">⇄</button>
-      <div class="pt" style="text-align:right"><div class="label">To</div><div class="name" id="toName">Point B</div></div>
+      <div class="pt" style="text-align:right"><div class="label">To</div><select class="route-select route-select-right" id="toSelect" onchange="onToChange()"></select></div>
     </div>
   </header>
 
@@ -284,10 +287,18 @@ const VEHICLE_ICONS = { sedan:'🚗', family:'🚙', minibus:'🚐' };
 const VEHICLE_ROWLABEL = { sedan:'Back row', family:'Row', minibus:'Row' };
 let VEHICLES = {};
 let POINTS = { A: { full: 'Point A', short: 'A' }, B: { full: 'Point B', short: 'B' } }; // overwritten by /api/points on load
+let DIRECTIONS = { A_TO_B: {from:'A',to:'B'}, B_TO_A: {from:'B',to:'A'} }; // overwritten by /api/directions on load
+let routeFrom = 'A', routeTo = 'B';
 function routeLabel(direction, useShort){
-  const a = useShort ? POINTS.A.short : POINTS.A.full;
-  const b = useShort ? POINTS.B.short : POINTS.B.full;
-  return direction==='A_TO_B' ? `${a} → ${b}` : `${b} → ${a}`;
+  const d = DIRECTIONS[direction];
+  if (!d) return direction;
+  const from = useShort ? POINTS[d.from].short : POINTS[d.from].full;
+  const to = useShort ? POINTS[d.to].short : POINTS[d.to].full;
+  return `${from} → ${to}`;
+}
+function destinationName(direction){
+  const d = DIRECTIONS[direction];
+  return d ? POINTS[d.to].full : 'the destination';
 }
 let authMode = 'login';
 let regGender = null;
@@ -326,9 +337,30 @@ fetch(API_BASE + '/api/vehicles').then(r=>r.json()).then(v=>{ VEHICLES = v; rend
 });
 fetch(API_BASE + '/api/points').then(r=>r.json()).then(p=>{
   POINTS = p;
-  document.getElementById('fromName').textContent = POINTS.A.full;
-  document.getElementById('toName').textContent = POINTS.B.full;
+  return fetch(API_BASE + '/api/directions').then(r=>r.json()).then(d=>{ DIRECTIONS = d; });
+}).then(()=>{
+  renderRouteSelectors();
 }).catch(()=>{});
+
+function renderRouteSelectors(){
+  const ids = Object.keys(POINTS);
+  if (!ids.includes(routeFrom)) routeFrom = ids[0];
+  if (!ids.includes(routeTo) || routeTo === routeFrom) routeTo = ids.find(id => id !== routeFrom) || ids[0];
+  document.getElementById('fromSelect').innerHTML = ids.map(id =>
+    `<option value="${id}" ${id===routeFrom?'selected':''}>${POINTS[id].full}</option>`).join('');
+  document.getElementById('toSelect').innerHTML = ids.filter(id => id !== routeFrom).map(id =>
+    `<option value="${id}" ${id===routeTo?'selected':''}>${POINTS[id].full}</option>`).join('');
+  state.direction = `${routeFrom}_TO_${routeTo}`;
+}
+function onFromChange(){
+  routeFrom = document.getElementById('fromSelect').value;
+  if (routeTo === routeFrom){ const ids = Object.keys(POINTS); routeTo = ids.find(id => id !== routeFrom) || routeTo; }
+  renderRouteSelectors();
+}
+function onToChange(){
+  routeTo = document.getElementById('toSelect').value;
+  state.direction = `${routeFrom}_TO_${routeTo}`;
+}
 
 function goTo(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -440,9 +472,8 @@ function renderCustomerHistory(){
 
 /* ---------- vehicle picking / party ---------- */
 function swapRoute(){
-  state.direction = state.direction==='A_TO_B' ? 'B_TO_A' : 'A_TO_B';
-  const from = document.getElementById('fromName'); const to = document.getElementById('toName');
-  const tmp = from.textContent; from.textContent = to.textContent; to.textContent = tmp;
+  const tmp = routeFrom; routeFrom = routeTo; routeTo = tmp;
+  renderRouteSelectors();
 }
 function renderVehicleList(){
   const wrap = document.getElementById('vehicleList');
@@ -635,15 +666,18 @@ function pointIcon(){ return L.divIcon({ className: 'point-pin', iconSize: [16,1
 function captainIcon(){ return L.divIcon({ className: 'captain-pin', html: '🚗', iconSize: [30,30] }); }
 
 function ensureTripMap(){
-  if (tripMap || !POINTS.A.lat) return; // POINTS not loaded yet — map init is skipped, tried again next update
+  if (tripMap) return;
+  const d = DIRECTIONS[state.direction];
+  if (!d || !POINTS[d.from] || !POINTS[d.from].lat) return; // route/points not loaded yet — tried again next update
+  const fromPt = POINTS[d.from], toPt = POINTS[d.to];
   tripMap = L.map('tripMap', { zoomControl: false, attributionControl: true });
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     maxZoom: 19,
   }).addTo(tripMap);
-  L.marker([POINTS.A.lat, POINTS.A.lng], { icon: pointIcon() }).addTo(tripMap).bindPopup(POINTS.A.full);
-  L.marker([POINTS.B.lat, POINTS.B.lng], { icon: pointIcon() }).addTo(tripMap).bindPopup(POINTS.B.full);
-  tripMap.fitBounds(L.latLngBounds([[POINTS.A.lat, POINTS.A.lng], [POINTS.B.lat, POINTS.B.lng]]), { padding: [30, 30] });
+  L.marker([fromPt.lat, fromPt.lng], { icon: pointIcon() }).addTo(tripMap).bindPopup(fromPt.full);
+  L.marker([toPt.lat, toPt.lng], { icon: pointIcon() }).addTo(tripMap).bindPopup(toPt.full);
+  tripMap.fitBounds(L.latLngBounds([[fromPt.lat, fromPt.lng], [toPt.lat, toPt.lng]]), { padding: [30, 30] });
   setTimeout(() => tripMap && tripMap.invalidateSize(), 200);
 }
 
@@ -670,7 +704,7 @@ function handleCarUpdate(car){
     state.matched = true;
     enterTripScreen(car);
   } else if (car.status === 'in_trip' && state.matched && !state.done){
-    document.getElementById('tripStage').textContent = 'On the way to ' + (state.direction==='A_TO_B' ? POINTS.B.full : POINTS.A.full);
+    document.getElementById('tripStage').textContent = 'On the way to ' + destinationName(state.direction);
     renderSeatMap('tripSeatMap', car, true);
   } else if (car.status === 'completed' && !state.done){
     state.done = true;
@@ -692,7 +726,7 @@ function enterTripScreen(car){
   document.getElementById('seatCode').textContent = seatLabel;
   const fare = state.mode==='private' ? VEHICLES[car.vehicleType].fullPrice : (state.party.men+state.party.women)*VEHICLES[car.vehicleType].price;
   document.getElementById('tripFare').textContent = fare + ' SAR';
-  document.getElementById('tripStage').textContent = car.status==='in_trip' ? ('On the way to ' + (state.direction==='A_TO_B' ? POINTS.B.full : POINTS.A.full)) : 'Captain is on the way';
+  document.getElementById('tripStage').textContent = car.status==='in_trip' ? ('On the way to ' + destinationName(state.direction)) : 'Captain is on the way';
   renderSeatMap('tripSeatMap', car, true);
   goTo('screen-trip');
   ensureTripMap();
