@@ -22,6 +22,7 @@
   .brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;letter-spacing:0.2px;}
   .brand small{display:block;font-family:'Inter';font-weight:500;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;opacity:0.65;margin-top:2px;}
   .avatar{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;cursor:pointer;}
+  .icon-btn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;}
   .conn-dot{width:8px;height:8px;border-radius:50%;background:#E5B25A;position:absolute;top:14px;right:14px;}
   .conn-dot.live{background:#7FD69A;}
   .route-pill{margin-top:18px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:10px;}
@@ -130,7 +131,10 @@
     <div class="conn-dot" id="connDot"></div>
     <div class="brand-row">
       <div class="brand">Rahlah <small>Shared shuttle · A ⇄ B</small></div>
-      <div class="avatar" id="userAvatar" onclick="goTo('screen-account')">?</div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="icon-btn" id="historyIcon" onclick="openHistory()" title="Trip history">🕐</div>
+        <div class="avatar" id="userAvatar" onclick="openAccount()">?</div>
+      </div>
     </div>
     <div class="route-pill">
       <div class="pt"><div class="label">From</div><div class="name" id="fromName">Point A</div></div>
@@ -161,11 +165,17 @@
 
     <!-- ACCOUNT / PROFILE -->
     <section class="screen" id="screen-account">
-      <button class="nav-back" onclick="goTo('screen-pick')">← Back to rides</button>
+      <button class="nav-back" onclick="returnFromSubScreen()">← Back</button>
       <div class="profile-row">
         <div><div class="profile-name" id="profName">—</div><div class="profile-meta" id="profMeta">—</div></div>
         <button class="logout-link" onclick="logout()">Log out</button>
       </div>
+      <button class="cta ghost" onclick="openHistory()">View trip history</button>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="screen" id="screen-history">
+      <button class="nav-back" onclick="returnFromSubScreen()">← Back</button>
       <div class="section-title">Your trips</div>
       <div id="historyList"></div>
     </section>
@@ -388,7 +398,30 @@ function logout(){
 function updateProfileUI(){
   document.getElementById('profName').textContent = state.customer.name;
   document.getElementById('profMeta').textContent = state.customer.phone + ' · ' + (state.customer.gender==='men'?'Man':'Woman');
+}
+let previousScreen = null;
+function currentActiveScreenId(){
+  const el = document.querySelector('.screen.active');
+  return el ? el.id : 'screen-pick';
+}
+function openAccount(){
+  const active = currentActiveScreenId();
+  if (active !== 'screen-account' && active !== 'screen-history') previousScreen = active;
+  goTo('screen-account');
+}
+async function openHistory(){
+  const active = currentActiveScreenId();
+  if (active !== 'screen-account' && active !== 'screen-history') previousScreen = active;
+  goTo('screen-history');
+  // refresh from the server so trips completed elsewhere (or since login) show up
+  try{
+    const data = await fetch(API_BASE + '/api/customer/me', { headers: authHeaders() }).then(r=>r.json());
+    state.customer = data.customer;
+  } catch(e){}
   renderCustomerHistory();
+}
+function returnFromSubScreen(){
+  goTo(previousScreen || 'screen-pick');
 }
 function renderCustomerHistory(){
   const wrap = document.getElementById('historyList');
