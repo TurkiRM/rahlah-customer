@@ -618,19 +618,35 @@ function showWaitOptions(){
   }).catch(()=>{});
 }
 
+// Returns true if the booking was actually cancelled server-side, false if it
+// couldn't be (e.g. a captain got matched in the moment before this was
+// clicked) — callers must check this instead of assuming cancel always works.
 async function releaseCurrentSeats(){
-  if (state.mode==='shared' && state.carId && Array.isArray(state.mySeats) && state.mySeats.length){
-    try{
-      await fetch(`${API_BASE}/api/book/${state.carId}/cancel`, {
-        method:'POST', headers: authHeaders(true),
-        body: JSON.stringify({ seats: state.mySeats }),
-      });
-    } catch(e){}
+  if (!state.carId) return true; // nothing booked yet, nothing to cancel
+  const body = state.mode === 'private' ? {} : { seats: state.mySeats };
+  try{
+    const res = await fetch(`${API_BASE}/api/book/${state.carId}/cancel`, {
+      method:'POST', headers: authHeaders(true),
+      body: JSON.stringify(body),
+    });
+    if (!res.ok){
+      const data = await res.json().catch(()=>({}));
+      alert(data.error || "This trip couldn't be cancelled — it may have already been matched with a captain.");
+      return false;
+    }
+    return true;
+  } catch(e){
+    alert("Couldn't reach the server — try again.");
+    return false;
   }
 }
-async function switchVehicle(vtype){ await releaseCurrentSeats(); state.vehicleType = vtype; requestSeats(); }
-async function switchToPrivate(){ await releaseCurrentSeats(); bookPrivate(state.vehicleType); }
-async function leaveMatching(){ clearTimeout(waitTimer); await releaseCurrentSeats(); goTo(state.mode==='private' ? 'screen-pick' : 'screen-party'); }
+async function switchVehicle(vtype){ if (!(await releaseCurrentSeats())) return; state.vehicleType = vtype; requestSeats(); }
+async function switchToPrivate(){ if (!(await releaseCurrentSeats())) return; bookPrivate(state.vehicleType); }
+async function leaveMatching(){
+  clearTimeout(waitTimer);
+  if (!(await releaseCurrentSeats())) return; // stay put — the booking is still real, don't pretend it's gone
+  goTo(state.mode==='private' ? 'screen-pick' : 'screen-party');
+}
 
 function isMySeat(type, ri, si){
   if (state.mySeats==='ALL') return true;
