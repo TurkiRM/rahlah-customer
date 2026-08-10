@@ -730,6 +730,13 @@ function handleCarUpdate(car){
     renderSeatMap('seatMap', car, true);
     updateMatchProgress(car);
   }
+  if (car.status === 'cancelled' && !state.done){
+    state.done = true;
+    clearTimeout(waitTimer);
+    alert("This booking was cancelled by Rahlah support — no captain was available in time. Please try booking again.");
+    resetToHome();
+    return;
+  }
   if (car.status === 'ready' && !state.matched && !state.done){
     state.matched = true;
     enterTripScreen(car);
