@@ -252,6 +252,7 @@
         <div id="tripSeatMap"></div>
       </div>
       <div class="fare-box"><div><div class="fl">Fare due (cash to captain)</div></div><div class="fv" id="tripFare">4 SAR</div></div>
+      <button class="cta ghost" id="cancelTripBtn" onclick="cancelMatchedTrip()">Cancel this trip</button>
     </section>
 
     <section class="screen" id="screen-done">
@@ -631,7 +632,7 @@ async function releaseCurrentSeats(){
     });
     if (!res.ok){
       const data = await res.json().catch(()=>({}));
-      alert(data.error || "This trip couldn't be cancelled — it may have already been matched with a captain.");
+      alert(data.error || "This trip couldn't be cancelled — it may have already started.");
       return false;
     }
     return true;
@@ -646,6 +647,12 @@ async function leaveMatching(){
   clearTimeout(waitTimer);
   if (!(await releaseCurrentSeats())) return; // stay put — the booking is still real, don't pretend it's gone
   goTo(state.mode==='private' ? 'screen-pick' : 'screen-party');
+}
+async function cancelMatchedTrip(){
+  if (!confirm('Cancel this trip? Your captain will be notified.')) return;
+  if (!(await releaseCurrentSeats())) return; // releaseCurrentSeats already explains why, if it failed
+  state.done = true;
+  resetToHome();
 }
 
 function isMySeat(type, ri, si){
@@ -742,6 +749,7 @@ function handleCarUpdate(car){
     enterTripScreen(car);
   } else if (car.status === 'in_trip' && state.matched && !state.done){
     document.getElementById('tripStage').textContent = 'On the way to ' + destinationName(state.direction);
+    document.getElementById('cancelTripBtn').style.display = 'none';
     renderSeatMap('tripSeatMap', car, true);
   } else if (car.status === 'completed' && !state.done){
     state.done = true;
@@ -765,6 +773,7 @@ function enterTripScreen(car){
   const fare = state.mode==='private' ? (tf?tf.full:0) : (state.party.men+state.party.women)*(tf?tf.seat:0);
   document.getElementById('tripFare').textContent = fare + ' SAR';
   document.getElementById('tripStage').textContent = car.status==='in_trip' ? ('On the way to ' + destinationName(state.direction)) : 'Captain is on the way';
+  document.getElementById('cancelTripBtn').style.display = car.status==='in_trip' ? 'none' : 'block';
   renderSeatMap('tripSeatMap', car, true);
   goTo('screen-trip');
   ensureTripMap();
