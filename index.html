@@ -103,6 +103,7 @@
 
   .captain-card{background:var(--brand);color:#fff;border-radius:var(--radius);padding:20px;display:flex;align-items:center;gap:14px;margin-bottom:16px;}
   .call-btn{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;font-size:18px;text-decoration:none;flex-shrink:0;}
+  .wa-btn{background:#25D366;}
   .cap-rating{font-size:12px;opacity:0.85;margin-top:2px;}
   .map-card{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;}
   #tripMap{width:100%;height:220px;background:var(--bg);}
@@ -261,6 +262,7 @@
         <div class="cap-avatar" id="capInitials">MA</div>
         <div style="flex:1;"><div class="cap-name" id="capName">Mohammed A.</div><div class="cap-meta" id="capMeta">Toyota Camry · White · 4211 KLM</div></div>
         <a class="call-btn" id="callCaptainBtn" href="tel:" title="Call captain">📞</a>
+        <a class="call-btn wa-btn" id="whatsappCaptainBtn" href="#" target="_blank" rel="noopener" title="WhatsApp captain">💬</a>
       </div>
       <div class="map-card">
         <div id="tripMap"></div>
@@ -823,6 +825,21 @@ function handleCarUpdate(car){
   if (car.captainLocation) updateCaptainMarker(car.captainLocation);
 }
 
+// Converts a stored phone number to a wa.me link. Numbers are stored however
+// someone typed them at registration — mostly local Saudi format
+// (05xxxxxxxx). We handle that common case correctly by dropping the leading
+// 0 and prepending Saudi's country code (966). If the number doesn't start
+// with 0, we assume it's already got a country code on it and pass it
+// through as-is. This does NOT correctly handle a tourist who typed their
+// home country's number in ITS local format (e.g. an Indonesian "0812...")
+// — there's no way to know that without asking their country explicitly.
+function whatsappLink(phone){
+  if (!phone) return null;
+  let digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('0')) digits = '966' + digits.slice(1);
+  return digits ? `https://wa.me/${digits}` : null;
+}
+
 function enterTripScreen(car){
   clearTimeout(waitTimer);
   document.getElementById('capName').textContent = car.captainName || 'Your captain';
@@ -831,6 +848,9 @@ function enterTripScreen(car){
   document.getElementById('capInitials').textContent = (car.captainName||'C A').split(' ').map(w=>w[0]).join('').slice(0,2);
   document.getElementById('callCaptainBtn').href = car.captainPhone ? 'tel:' + car.captainPhone : 'tel:';
   document.getElementById('callCaptainBtn').style.display = car.captainPhone ? 'flex' : 'none';
+  const waLink = whatsappLink(car.captainPhone);
+  document.getElementById('whatsappCaptainBtn').href = waLink || '#';
+  document.getElementById('whatsappCaptainBtn').style.display = waLink ? 'flex' : 'none';
   const seatLabel = state.mode==='private'
     ? `Whole car · ${totalSeats(car.vehicleType)} seats`
     : `${Array.isArray(state.mySeats)?state.mySeats.length:1} seat${(Array.isArray(state.mySeats)&&state.mySeats.length===1)?'':'s'} · ${state.party.men} men, ${state.party.women} women`;
