@@ -142,6 +142,7 @@
     <div class="brand-row">
       <div class="brand">Rahlah <small>Shared shuttle · A ⇄ B</small></div>
       <div style="display:flex;align-items:center;gap:10px;">
+        <a class="icon-btn" id="helpIcon" href="#" target="_blank" rel="noopener" title="Contact support on WhatsApp" style="display:none;text-decoration:none;">🆘</a>
         <div class="icon-btn" id="historyIcon" onclick="openHistory()" title="Trip history">🕐</div>
         <div class="avatar" id="userAvatar" onclick="openAccount()">?</div>
       </div>
@@ -381,6 +382,11 @@ fetch(API_BASE + '/api/points').then(r=>r.json()).then(p=>{
   return fetch(API_BASE + '/api/directions').then(r=>r.json()).then(d=>{ DIRECTIONS = d; });
 }).then(()=>{
   renderRouteSelectors();
+}).catch(()=>{});
+fetch(API_BASE + '/api/settings').then(r=>r.json()).then(s=>{
+  const helpLink = whatsappLink(s.supportWhatsApp);
+  const helpIcon = document.getElementById('helpIcon');
+  if (helpLink){ helpIcon.href = helpLink; helpIcon.style.display = 'flex'; }
 }).catch(()=>{});
 
 function renderRouteSelectors(){
