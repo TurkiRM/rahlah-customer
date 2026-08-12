@@ -110,7 +110,8 @@
   .map-note{padding:10px 14px;font-size:11.5px;color:var(--ink-soft);border-top:1px solid var(--line);}
   .leaflet-marker-icon.captain-pin{background:var(--brand);border:3px solid #fff;border-radius:50%;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:16px;}
   .leaflet-marker-icon.point-pin{background:var(--gold);border:2px solid #fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.25);}
-  .cap-avatar{width:52px;height:52px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:18px;color:var(--brand-deep);flex-shrink:0;}
+  .cap-avatar{width:52px;height:52px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk';font-weight:700;font-size:18px;color:var(--brand-deep);flex-shrink:0;position:relative;overflow:hidden;}
+  .cap-avatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
   .cap-name{font-family:'Space Grotesk';font-weight:600;font-size:16px;}
   .cap-meta{font-size:12px;opacity:0.75;margin-top:3px;}
   .fare-box{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
@@ -259,7 +260,10 @@
     <section class="screen" id="screen-trip">
       <div class="section-title" id="tripStage">Captain is on the way</div>
       <div class="captain-card">
-        <div class="cap-avatar" id="capInitials">MA</div>
+        <div class="cap-avatar" id="capAvatarWrap">
+          <span id="capInitials">MA</span>
+          <img id="capPhoto" alt="" style="display:none;" />
+        </div>
         <div style="flex:1;"><div class="cap-name" id="capName">Mohammed A.</div><div class="cap-meta" id="capMeta">Toyota Camry · White · 4211 KLM</div></div>
         <a class="call-btn" id="callCaptainBtn" href="tel:" title="Call captain">📞</a>
         <a class="call-btn wa-btn" id="whatsappCaptainBtn" href="#" target="_blank" rel="noopener" title="WhatsApp captain">💬</a>
@@ -846,6 +850,18 @@ function enterTripScreen(car){
   const ratingLine = car.captainRatingCount ? `★ ${car.captainRatingAvg} (${car.captainRatingCount} rides)` : 'No ratings yet';
   document.getElementById('capMeta').innerHTML = `${VEHICLES[car.vehicleType].name} · Plate ${car.captainPlate || '—'}<div class="cap-rating">${ratingLine}</div>`;
   document.getElementById('capInitials').textContent = (car.captainName||'C A').split(' ').map(w=>w[0]).join('').slice(0,2);
+  // A real photo is a safety feature — the customer should be able to visually
+  // confirm it's the right person before getting in. Falls back to initials
+  // silently (onerror) if the captain has no photo on file or it fails to load.
+  const photoEl = document.getElementById('capPhoto');
+  const initialsEl = document.getElementById('capInitials');
+  if (car.captainId){
+    photoEl.onerror = () => { photoEl.style.display = 'none'; initialsEl.style.display = 'flex'; };
+    photoEl.onload = () => { photoEl.style.display = 'block'; initialsEl.style.display = 'none'; };
+    photoEl.src = `${API_BASE}/api/customer/captain-photo/${car.captainId}?token=${encodeURIComponent(token)}`;
+  } else {
+    photoEl.style.display = 'none'; initialsEl.style.display = 'flex';
+  }
   document.getElementById('callCaptainBtn').href = car.captainPhone ? 'tel:' + car.captainPhone : 'tel:';
   document.getElementById('callCaptainBtn').style.display = car.captainPhone ? 'flex' : 'none';
   const waLink = whatsappLink(car.captainPhone);
