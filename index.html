@@ -400,18 +400,22 @@ fetch(API_BASE + '/api/settings').then(r=>r.json()).then(s=>{
 function renderRouteSelectors(){
   const ids = Object.keys(POINTS);
   if (!ids.includes(routeFrom)) routeFrom = ids[0];
-  if (!ids.includes(routeTo) || routeTo === routeFrom) routeTo = ids.find(id => id !== routeFrom) || ids[0];
+  // Only points with an ACTUAL valid route from the current "From" — not
+  // just "every other point". With hub-and-spoke routing, most pairs aren't
+  // bookable at all (e.g. two different neighborhoods), so this can't just
+  // be "everything except whatever's selected" anymore.
+  const validToIds = ids.filter(id => id !== routeFrom && DIRECTIONS[`${routeFrom}_TO_${id}`]);
+  if (!validToIds.includes(routeTo)) routeTo = validToIds[0] || null;
   document.getElementById('fromSelect').innerHTML = ids.map(id =>
     `<option value="${id}" ${id===routeFrom?'selected':''}>${POINTS[id].full}</option>`).join('');
-  document.getElementById('toSelect').innerHTML = ids.filter(id => id !== routeFrom).map(id =>
+  document.getElementById('toSelect').innerHTML = validToIds.map(id =>
     `<option value="${id}" ${id===routeTo?'selected':''}>${POINTS[id].full}</option>`).join('');
-  state.direction = `${routeFrom}_TO_${routeTo}`;
+  state.direction = routeTo ? `${routeFrom}_TO_${routeTo}` : null;
   refreshFare();
 }
 function onFromChange(){
   routeFrom = document.getElementById('fromSelect').value;
-  if (routeTo === routeFrom){ const ids = Object.keys(POINTS); routeTo = ids.find(id => id !== routeFrom) || routeTo; }
-  renderRouteSelectors();
+  renderRouteSelectors(); // recomputes valid "To" options and picks a sane default among them
 }
 function onToChange(){
   routeTo = document.getElementById('toSelect').value;
