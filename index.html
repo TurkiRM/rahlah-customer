@@ -582,12 +582,25 @@ let routeViewMap = null;
 async function viewTripRoute(carId){
   goTo('screen-route-view');
   document.getElementById('routeViewStatus').textContent = 'Loading route…';
+  let res;
   try{
-    const data = await fetch(`${API_BASE}/api/customer/trip/${carId}/track`, { headers: authHeaders() }).then(r=>r.json());
-    renderTripRouteMap(data.track || []);
+    res = await fetch(`${API_BASE}/api/customer/trip/${carId}/track`, { headers: authHeaders() });
   } catch(e){
-    document.getElementById('routeViewStatus').textContent = "Couldn't load the route.";
+    document.getElementById('routeViewStatus').textContent = "Couldn't reach the server at all — check your internet connection.";
+    return;
   }
+  let data;
+  try{
+    data = await res.json();
+  } catch(e){
+    // Response came back but wasn't JSON — almost always means this route
+    // doesn't exist on whatever backend is actually deployed (a 404 page is
+    // HTML, not JSON). Distinct from a real network failure.
+    document.getElementById('routeViewStatus').textContent = `The server responded unexpectedly (status ${res.status}). This usually means the backend hasn't been redeployed with this feature yet.`;
+    return;
+  }
+  if (!res.ok){ document.getElementById('routeViewStatus').textContent = data.error || 'Could not load this route.'; return; }
+  renderTripRouteMap(data.track || []);
 }
 function renderTripRouteMap(track){
   const statusEl = document.getElementById('routeViewStatus');
