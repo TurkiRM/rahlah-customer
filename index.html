@@ -115,6 +115,15 @@
   .cap-name{font-family:'Space Grotesk';font-weight:600;font-size:16px;}
   .cap-meta{font-size:12px;opacity:0.75;margin-top:3px;}
   .fare-box{background:#fff;border:1.5px solid var(--line);border-radius:var(--radius);padding:18px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .wallet-card{background:var(--brand);color:#fff;border-radius:var(--radius);padding:18px;margin:16px 0;}
+  .wallet-label{font-size:11px;text-transform:uppercase;letter-spacing:1px;opacity:0.75;}
+  .wallet-amount{font-family:'IBM Plex Mono';font-weight:600;font-size:26px;margin-top:4px;}
+  .wallet-card .section-note{color:rgba(255,255,255,0.75);}
+  .paymethod-row{display:flex;gap:10px;margin-bottom:18px;}
+  .paymethod-btn{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:12px 10px;text-align:center;cursor:pointer;}
+  .paymethod-btn.active{border-color:var(--brand);background:#F5FAF7;}
+  .paymethod-btn .pm-label{font-family:'Space Grotesk';font-weight:600;font-size:13px;color:var(--brand-deep);}
+  .paymethod-btn .pm-sub{font-size:11px;color:var(--ink-soft);margin-top:2px;}
   .fare-box .fl{font-size:12px;color:var(--ink-soft);}
   .fare-box .fv{font-family:'IBM Plex Mono';font-weight:600;font-size:22px;color:var(--brand-deep);}
 
@@ -195,6 +204,13 @@
         <div><div class="profile-name" id="profName">—</div><div class="profile-meta" id="profMeta">—</div></div>
         <button class="logout-link" onclick="logout()" data-i18n="logOut">Log out</button>
       </div>
+
+      <div class="wallet-card">
+        <div class="wallet-label" data-i18n="walletBalance">Wallet balance</div>
+        <div class="wallet-amount" id="walletBalanceAmount">0 SAR</div>
+        <p class="section-note" style="margin:6px 0 0;" data-i18n="walletTopUpNote">Top-up isn't available in the app yet — contact your supervisor to add funds.</p>
+      </div>
+
       <button class="cta ghost" onclick="openHistory()" data-i18n="viewTripHistory">View trip history</button>
 
       <div class="section-title" style="margin-top:26px;" data-i18n="editProfile">Edit profile</div>
@@ -226,6 +242,16 @@
 
     <section class="screen" id="screen-pick">
       <div class="section-title" data-i18n="chooseRide">Choose a ride</div>
+      <div class="paymethod-row" id="paymethodRow">
+        <div class="paymethod-btn" id="paymethodCashBtn" onclick="setPaymentMethod('cash')">
+          <div class="pm-label" data-i18n="payCash">💵 Cash</div>
+          <div class="pm-sub" data-i18n="payCashSub">Pay the captain directly</div>
+        </div>
+        <div class="paymethod-btn" id="paymethodWalletBtn" onclick="setPaymentMethod('wallet')">
+          <div class="pm-label" data-i18n="payWallet">👛 Wallet</div>
+          <div class="pm-sub" id="paymethodWalletSub">0 SAR available</div>
+        </div>
+      </div>
       <div id="vehicleList"></div>
     </section>
 
@@ -254,6 +280,7 @@
         <div><div class="ps-l" data-i18n="totalSeats">Total seats</div><div class="ps-v" id="partyTotal">0</div></div>
         <div style="text-align:end"><div class="ps-l" data-i18n="fare">Fare</div><div class="ps-v" id="partyFare">0 SAR</div></div>
       </div>
+      <p class="section-note" id="partyPaymentNote" style="margin-top:-10px;"></p>
       <div id="partyError"></div>
       <button class="cta" id="partyContinue" disabled onclick="requestSeats()" data-i18n="requestSeats">Request seats</button>
     </section>
@@ -400,6 +427,14 @@ const STRINGS = {
   men: { en:'Men', ar:'رجال' },
   women: { en:'Women', ar:'نساء' },
   totalSeats: { en:'Total seats', ar:'إجمالي المقاعد' },
+  walletBalance: { en:'Wallet balance', ar:'رصيد المحفظة' },
+  walletTopUpNote: { en:"Top-up isn't available in the app yet — contact your supervisor to add funds.", ar:'إعادة الشحن غير متاحة في التطبيق حاليًا — تواصل مع المشرف لإضافة رصيد.' },
+  payCash: { en:'💵 Cash', ar:'💵 نقدًا' },
+  payCashSub: { en:'Pay the captain directly', ar:'ادفع للقائد مباشرة' },
+  payWallet: { en:'👛 Wallet', ar:'👛 المحفظة' },
+  walletAvailable: { en:'{amount} SAR available', ar:'{amount} ر.س متاح' },
+  payingWithCash: { en:"You'll pay the captain in cash after the trip.", ar:'ستدفع للقائد نقدًا بعد الرحلة.' },
+  payingWithWallet: { en:'This fare will be paid from your wallet balance.', ar:'سيتم دفع هذه الأجرة من رصيد محفظتك.' },
   fare: { en:'Fare', ar:'الأجرة' },
   to: { en:'To', ar:'إلى' },
   from: { en:'From', ar:'من' },
@@ -532,6 +567,7 @@ applyStaticTranslations();
 let state = {
   customer: null, vehicleType: null, direction: 'A_TO_B', mode: 'shared',
   party: { men:0, women:0 }, carId: null, mySeats: [], car: null, matched:false, done:false,
+  paymentMethod: 'cash',
 };
 
 function authHeaders(json){
@@ -675,6 +711,7 @@ function updateProfileUI(){
   document.getElementById('profMeta').textContent = state.customer.phone + ' · ' + (state.customer.gender==='men'?t('man'):t('woman'));
   document.getElementById('editName').value = state.customer.name;
   document.getElementById('editPhone').value = state.customer.phone;
+  document.getElementById('walletBalanceAmount').textContent = (state.customer.walletBalance || 0) + ' SAR';
 }
 async function saveProfile(){
   const name = document.getElementById('editName').value.trim();
@@ -798,7 +835,20 @@ function swapRoute(){
   const tmp = routeFrom; routeFrom = routeTo; routeTo = tmp;
   renderRouteSelectors();
 }
+function renderPaymentMethodToggle(){
+  const balance = (state.customer && state.customer.walletBalance) || 0;
+  document.getElementById('paymethodWalletSub').textContent = t('walletAvailable', { amount: balance });
+  document.getElementById('paymethodCashBtn').classList.toggle('active', state.paymentMethod === 'cash');
+  document.getElementById('paymethodWalletBtn').classList.toggle('active', state.paymentMethod === 'wallet');
+  const note = document.getElementById('partyPaymentNote');
+  if (note) note.textContent = state.paymentMethod === 'wallet' ? t('payingWithWallet') : t('payingWithCash');
+}
+function setPaymentMethod(method){
+  state.paymentMethod = method;
+  renderPaymentMethodToggle();
+}
 function renderVehicleList(){
+  renderPaymentMethodToggle();
   const wrap = document.getElementById('vehicleList');
   wrap.innerHTML = '';
   Object.entries(VEHICLES).forEach(([key,cfg])=>{
@@ -854,7 +904,7 @@ async function requestSeats(){
   try{
     const res = await fetch(API_BASE + '/api/book', {
       method:'POST', headers: authHeaders(true),
-      body: JSON.stringify({ vehicleType: state.vehicleType, direction: state.direction, party: state.party }),
+      body: JSON.stringify({ vehicleType: state.vehicleType, direction: state.direction, party: state.party, paymentMethod: state.paymentMethod }),
     });
     const data = await res.json();
     if (!res.ok){
@@ -876,7 +926,7 @@ async function bookPrivate(vehicleType){
   try{
     const res = await fetch(API_BASE + '/api/book-private', {
       method:'POST', headers: authHeaders(true),
-      body: JSON.stringify({ vehicleType, direction: state.direction }),
+      body: JSON.stringify({ vehicleType, direction: state.direction, paymentMethod: state.paymentMethod }),
     });
     const data = await res.json();
     if (!res.ok){ alert(data.error || t('couldNotBookWholeCar')); return; }
@@ -1164,6 +1214,7 @@ function enterDoneScreen(car){
 function resetToHome(){
   state.vehicleType=null; state.carId=null; state.mySeats=[]; state.car=null;
   state.party = {men:0, women:0}; state.mode='shared'; state.matched=false; state.done=false;
+  state.paymentMethod = 'cash';
   renderVehicleList();
   goTo('screen-pick');
 }
